@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serviço Autônomo de Água e Esgoto</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Estilos básicos para a interface */
+        body {
+            font-family: 'Poppins', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+        }
+
+        .container {
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 1200px;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            margin: 10px 8px;
+            transition: background-color 0.3s ease;
+            font-weight: bold;
+            box-shadow: 0px 4px 12px rgba(0, 123, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        button i {
+            margin-right: 8px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+            box-shadow: 0px 6px 15px rgba(0, 123, 255, 0.5);
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        #editor {
+            margin-bottom: 20px;
+            height: 400px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+        }
+
+        #pdfPreview {
+            margin-top: 20px;
+            width: 100%;
+            height: 600px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        #footer {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        #footer p {
+            margin: 10px 0;
+            font-size: 14px;
+            color: #777;
+        }
+
+        #table-editor {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        #table-editor h4 {
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+
+        /* Botão de upload de imagem */
+        #image-upload {
+            margin-bottom: 20px;
+            display: inline-block;
+            padding: 10px;
+            border: 2px dashed #007bff;
+            border-radius: 8px;
+            background-color: #f0f8ff;
+            cursor: pointer;
+            font-size: 14px;
+            color: #007bff;
+        }
+
+        #image-upload:hover {
+            background-color: #e0f0ff;
+            border-color: #0056b3;
+        }
+
+        /* Alinhamento de imagem e espaçamento */
+        .img-align-left {
+            float: left;
+            margin-right: 15px;
+            margin-bottom: 15px;
+        }
+
+        .img-align-right {
+            float: right;
+            margin-left: 15px;
+            margin-bottom: 15px;
+        }
+
+        /* Campos de tamanho customizado */
+        #customDimensions {
+            display: none;
+        }
+
+        /* Estilos responsivos */
+        @media (max-width: 768px) {
+            .container {
+                width: 95%;
+            }
+
+            button {
+                width: 100%;
+                margin: 10px 0;
+            }
+
+            #pdfPreview {
+                height: 400px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                width: 100%;
+            }
+
+            #editor {
+                height: 300px;
+            }
+
+            #pdfPreview {
+                height: 300px;
+            }
+        }
+    </style>
+
+    <!-- TinyMCE (Editor WYSIWYG) CDN com fallback para local -->
+    <script src="https://cdn.jsdelivr.net/npm/tinymce@6.2.0/tinymce.min.js"></script>
+    <script>
+        window.tinymce || document.write('<script src="tinymce/tinymce.min.js"><\/script>');
+    </script>
+
+    <!-- html2pdf.js CDN com fallback para local -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+    <script>
+        window.html2pdf || document.write('<script src="html2pdf.js-main/dist/html2pdf.bundle.min.js"><\/script>');
+    </script>
+
+    <!-- JSZip CDN com fallback para local -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <script>
+        window.JSZip || document.write('<script src="jszip.min.js"><\/script>');
+    </script>
+
+</head>
+<body>
+    <div class="container">
+        <h2>Editor Serviço Autônomo de Água e Esgoto</h2>
+
+        <div class="controls">
+            <!-- Botão para upload de imagem -->
+            <label for="image-upload" id="image-upload-label">Upload de Imagem</label>
+            <input type="file" id="image-upload" accept="image/*" onchange="uploadImage()" aria-labelledby="image-upload-label" />
+        </div>
+
+        <!-- Editor de Texto -->
+        <textarea id="editor"></textarea>
+
+        <!-- Opções de formato de página -->
+        <div class="size-config">
+            <label for="pageFormat">Formato da Página:</label>
+            <select id="pageFormat" onchange="updateCustomSizeVisibility()" aria-label="Selecionar formato de página">
+                <option value="a4">A4 (210mm x 297mm)</option>
+                <option value="a3">A3 (297mm x 420mm)</option>
+                <option value="tabloid">Tabloid (11in x 17in)</option>
+                <option value="custom">Custom (px)</option>
+                <option value="half-a4">Metade A4 (148.5mm x 210mm)</option>
+            </select>
+
+            <!-- Campos para largura e altura personalizadas (pixels) -->
+            <div id="customDimensions">
+                <input type="number" id="customWidth" placeholder="Largura (px)" oninput="adjustHeightProportionally()" aria-label="Largura personalizada (px)" />
+                <input type="number" id="customHeight" placeholder="Altura (px)" oninput="adjustWidthProportionally()" aria-label="Altura personalizada (px)" />
+            </div>
+        </div>
+
+        <!-- Botões de ação com ícones -->
+        <div class="buttons">
+            <button onclick="generatePDFPreview()" aria-label="Visualizar PDF"><i class="fas fa-eye"></i>Visualizar PDF (Miniatura)</button>
+            <button onclick="generateRealPDF()" aria-label="Salvar PDF"><i class="fas fa-file-pdf"></i>Salvar PDF (Tamanho Real)</button>
+            <button onclick="saveAsEPUB()" aria-label="Salvar EPUB"><i class="fas fa-book"></i>Salvar como EPUB</button>
+            <button id="toggleModeBtn" onclick="toggleEditorMode()" aria-label="Alternar entre visual e HTML"><i class="fas fa-code"></i>Alternar para HTML</button>
+            <button onclick="saveProject()" aria-label="Salvar Projeto"><i class="fas fa-save"></i>Salvar Projeto</button>
+            <button onclick="loadProject()" aria-label="Carregar Projeto"><i class="fas fa-folder-open"></i>Carregar Projeto</button>
+            <button onclick="clearLocalStorage()" aria-label="Limpar"><i class="fas fa-trash"></i>Limpar Memória</button>
+        </div>
+
+        <!-- Pré-visualização do PDF -->
+        <iframe id="pdfPreview" src=""></iframe>
+    </div>
+
+    <div id="footer">
+        <p>Copyright: Daniel Oliveira da Paixão</p>
+    </div>
+
+    <script>
+        let editorMode = "visual";  // Modo inicial
+
+        /**
+         * Função para inicializar o editor TinyMCE
+         */
+        function initializeTinyMCE() {
+            tinymce.init({
+                selector: '#editor',
+                height: 400,
+                width: '100%',
+                language: 'pt_BR',
+                menubar: true,
+                branding: false,  // Desativa o branding do TinyMCE
+                plugins: [
+                    'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
+                    'checklist mediaembed export formatpainter pageembed a11ychecker tinymcespellchecker advtable advcode editimage',
+                ],
+                toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | addcomment showcomments | spellcheckdialog a11ycheck typography | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
+                image_title: true,
+                automatic_uploads: true,
+                file_picker_types: 'image',
+                setup: function (editor) {
+                    editor.on('init', function () {
+                        // Remover o link de upgrade
+                        const promotion = document.querySelector('.tox-promotion');
+                        if (promotion) promotion.style.display = 'none';
+                    });
+                }
+            });
+        }
+
+        initializeTinyMCE();
+
+        // Função para alternar entre o modo Visual e HTML
+        function toggleEditorMode() {
+            const toggleButton = document.getElementById('toggleModeBtn');
+
+            if (editorMode === "visual") {
+                const content = tinymce.get('editor').getContent();
+                tinymce.get('editor').remove();  // Destruir o editor TinyMCE
+                document.getElementById('editor').value = content;  // Colocar conteúdo no textarea
+                toggleButton.innerHTML = '<i class="fas fa-eye"></i> Alternar para o Modo Visual';
+                editorMode = "html";  // Mudar para modo HTML
+            } else {
+                const content = document.getElementById('editor').value;
+                tinymce.init({
+                    selector: '#editor',
+                    height: 400,
+                    width: '100%',
+                    language: 'pt_BR',
+                    menubar: true,
+                    branding: false,
+                    plugins: [
+                        'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
+                        'checklist mediaembed export formatpainter pageembed a11ychecker tinymcespellchecker advtable advcode editimage',
+                    ],
+                    toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | addcomment showcomments | spellcheckdialog a11ycheck typography | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
+                    image_title: true,
+                    automatic_uploads: true,
+                    setup: function (editor) {
+                        editor.on('init', function () {
+                            tinymce.get('editor').setContent(content);  // Recolocar o conteúdo
+                            const promotion = document.querySelector('.tox-promotion');
+                            if (promotion) promotion.style.display = 'none';
+                        });
+                    }
+                });
+                toggleButton.innerHTML = '<i class="fas fa-code"></i> Alternar para HTML';
+                editorMode = "visual";  // Mudar para modo Visual
+            }
+        }
+
+        /**
+         * Função para salvar o conteúdo do editor no localStorage
+         */
+        function saveProject() {
+            const content = tinymce.get('editor').getContent();
+            localStorage.setItem('projectContent', content);
+            alert('Projeto salvo com sucesso!');
+        }
+
+        /**
+         * Função para carregar o conteúdo salvo no localStorage
+         */
+        function loadProject() {
+            const savedContent = localStorage.getItem('projectContent');
+            if (savedContent) {
+                tinymce.get('editor').setContent(savedContent);
+                alert('Projeto carregado com sucesso!');
+            } else {
+                alert('Nenhum projeto salvo encontrado.');
+            }
+        }
+
+        /**
+         * Carregar o último documento salvo automaticamente ao iniciar
+         */
+        window.onload = function () {
+            const lastContent = localStorage.getItem('projectContent');
+            if (lastContent) {
+                tinymce.get('editor').setContent(lastContent);
+            }
+        };
+
+        /**
+         * Função para limpar o localStorage
+         */
+        function clearLocalStorage() {
+            localStorage.removeItem('projectContent');
+            alert('Memória limpa com sucesso!');
+        }
+
+        /**
+         * Função para gerar pré-visualização do PDF (em tamanho reduzido)
+         */
+        function generatePDFPreview() {
+            const editorContent = tinymce.get('editor').getContent();
+
+            convertImagesToBase64(editorContent, function(updatedContent) {
+                const pdfContentDiv = document.createElement('div');
+                pdfContentDiv.innerHTML = updatedContent;
+
+                const opt = {
+                    margin: 0.5,  // Margens em polegadas (1.27 cm)
+                    filename: 'documento.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2 },
+                    jsPDF: { unit: 'in', format: getPageSize(), orientation: 'portrait' }
+                };
+
+                html2pdf().from(pdfContentDiv).set(opt).output('blob').then(function (pdfBlob) {
+                    // Atualizar a pré-visualização com o PDF gerado em miniatura (50% do tamanho)
+                    const pdfPreviewFrame = document.getElementById('pdfPreview');
+                    const blobURL = URL.createObjectURL(pdfBlob);
+                    pdfPreviewFrame.style.transform = 'scale(0.5)';
+                    pdfPreviewFrame.style.transformOrigin = '0 0';
+                    pdfPreviewFrame.src = blobURL;
+                }).catch(function(error) {
+                    console.error("Erro ao gerar PDF:", error);
+                });
+            });
+        }
+
+        /**
+         * Função para gerar o PDF em tamanho real
+         */
+        function generateRealPDF() {
+            const editorContent = tinymce.get('editor').getContent();
+
+            convertImagesToBase64(editorContent, function(updatedContent) {
+                const pdfContentDiv = document.createElement('div');
+                pdfContentDiv.innerHTML = updatedContent;
+
+                const opt = {
+                    margin: 0.5,  // Margens em polegadas (1.27 cm)
+                    filename: 'documento_real.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2 },
+                    jsPDF: { unit: 'in', format: getPageSize(), orientation: 'portrait' }
+                };
+
+                html2pdf().from(pdfContentDiv).set(opt).save();  // Salvar PDF diretamente
+            });
+        }
+
+        /**
+         * Função para salvar como EPUB
+         */
+        function saveAsEPUB() {
+            const editorContent = tinymce.get('editor').getContent();
+            const zip = new JSZip();
+
+            // Arquivo mimetype e outros arquivos EPUB
+            zip.file("mimetype", "application/epub+zip");
+            zip.file("META-INF/container.xml", 
+                `<?xml version="1.0" encoding="UTF-8"?>
+                <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+                    <rootfiles>
+                        <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+                    </rootfiles>
+                </container>`
+            );
+
+            // Criar o conteúdo HTML básico do EPUB
+            zip.file("OEBPS/content.html", editorContent);
+            
+            // Arquivo de metadados content.opf
+            zip.file("OEBPS/content.opf", 
+                `<?xml version="1.0" encoding="UTF-8"?>
+                <package version="2.0" xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid">
+                    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                        <dc:title>Meu Documento EPUB</dc:title>
+                        <dc:language>pt-BR</dc:language>
+                    </metadata>
+                    <manifest>
+                        <item id="content" href="content.html" media-type="application/xhtml+xml"/>
+                    </manifest>
+                    <spine>
+                        <itemref idref="content"/>
+                    </spine>
+                </package>`
+            );
+
+            // Criar e salvar o arquivo EPUB
+            zip.generateAsync({ type: "blob" }).then(function (blob) {
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = "documento.epub";
+                link.click();
+            }).catch(function(error) {
+                console.error("Erro ao salvar EPUB:", error);
+            });
+        }
+
+        /**
+         * Função para upload de imagem e inserção no TinyMCE
+         */
+        function uploadImage() {
+            const input = document.getElementById('image-upload');
+            const file = input.files[0]; // Captura o arquivo selecionado
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    // Inserir a imagem no editor TinyMCE com a classe de alinhamento correta
+                    const alignClass = prompt("Digite 'left' para alinhar à esquerda ou 'right' para alinhar à direita:");
+                    const imgClass = alignClass === 'right' ? 'img-align-right' : 'img-align-left';
+                    tinymce.activeEditor.execCommand('mceInsertContent', false, `<img src="${e.target.result}" class="${imgClass}" alt="${file.name}" />`);
+                };
+                reader.readAsDataURL(file); // Converter a imagem para base64 e inseri-la
+            }
+        }
+
+        /**
+         * Função para converter imagens para base64 antes de gerar PDF
+         * @param {String} content - Conteúdo do editor
+         * @param {Function} callback - Função de retorno para chamar com o conteúdo atualizado
+         */
+        function convertImagesToBase64(content, callback) {
+            const div = document.createElement('div');
+            div.innerHTML = content;
+            const images = div.getElementsByTagName('img');
+
+            if (images.length === 0) {
+                callback(div.innerHTML);
+                return;
+            }
+
+            let processed = 0;
+
+            for (let img of images) {
+                fetch(img.src)
+                    .then(response => response.blob())
+                    .then(blob => {
+                        const reader = new FileReader();
+                        reader.onloadend = function () {
+                            img.src = reader.result;
+                            processed++;
+                            if (processed === images.length) {
+                                callback(div.innerHTML);
+                            }
+                        };
+                        reader.readAsDataURL(blob);
+                    });
+            }
+        }
+
+        /**
+         * Função para retornar o tamanho da página para geração do PDF
+         * @returns {Array} - Dimensões da página em polegadas
+         */
+        function getPageSize() {
+            const format = document.getElementById('pageFormat').value;
+            if (format === 'a4') {
+                return [210 / 25.4, 297 / 25.4]; // A4 em polegadas
+            } else if (format === 'a3') {
+                return [297 / 25.4, 420 / 25.4]; // A3 em polegadas
+            } else if (format === 'tabloid') {
+                return [11, 17]; // Tabloid em polegadas
+            } else if (format === 'half-a4') {
+                return [148.5 / 25.4, 210 / 25.4]; // Metade A4 em polegadas
+            } else if (format === 'custom') {
+                const width = document.getElementById('customWidth').value;
+                const height = document.getElementById('customHeight').value;
+                return [width / 96, height / 96]; // Custom em pixels convertidos para polegadas (96dpi)
+            }
+        }
+    </script>
+</body>
+</html>
